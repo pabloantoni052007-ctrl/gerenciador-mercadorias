@@ -10,11 +10,19 @@ public class Movimentacao {
     private int quantidadeMovida;
     private Timestamp dataMovimentacao;
     private String observacao;
+    private double precoVenda;
 
+    //Construtor SEM preço (para entradas e ajustes)
     public Movimentacao(int produtoId, String tipo, int quantidadeMovida, String observacao) {
+        this(produtoId, tipo, quantidadeMovida, 0.0, observacao); // chama o construtor com preço 0
+    }
+
+    //Construtor COM preço (para vendas)
+    public Movimentacao(int produtoId, String tipo, int quantidadeMovida, double precoVenda, String observacao) {
         this.produtoId = produtoId;
         this.tipo = tipo;
         this.quantidadeMovida = quantidadeMovida;
+        this.precoVenda = precoVenda;
         this.observacao = observacao;
     }
 
@@ -29,4 +37,7 @@ public class Movimentacao {
     public Timestamp getDataMovimentacao() { return dataMovimentacao; }
     public void setDataMovimentacao(Timestamp dataMovimentacao) { this.dataMovimentacao = dataMovimentacao; }
     public String getObservacao() { return observacao; }
+    public double getPrecoVenda() {return precoVenda;}
+    public void setPrecoVenda(double precoVenda) {this.precoVenda = precoVenda;}
+
 }

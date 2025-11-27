@@ -2,8 +2,12 @@ package br.com.zerium.gerenciador.view;
 
 import br.com.zerium.gerenciador.dao.MovimentacaoDAO;
 import br.com.zerium.gerenciador.dao.ProdutoDAO;
+import br.com.zerium.gerenciador.model.ItemPedido;
 import br.com.zerium.gerenciador.model.Movimentacao;
+import br.com.zerium.gerenciador.model.Pedido;
 import br.com.zerium.gerenciador.model.Produto;
+import br.com.zerium.gerenciador.util.Validador;
+
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -15,6 +19,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Arrays;
 
 public class TelaGerenciamento extends JFrame {
 
@@ -34,6 +39,15 @@ public class TelaGerenciamento extends JFrame {
     private JComboBox<Produto> comboProdutosVenda;
     private JSpinner spinnerQuantidadeVenda;
     private JTextField campoObservacaoVenda;
+    private JTextField campoPrecoVenda;
+
+    private Pedido pedidoAtual = new Pedido();
+    private JTable tabelaItensPedido;
+    private DefaultTableModel modeloTabelaItensPedido;
+    private JButton botaoAdicionarItem;
+    private JButton botaoFinalizarVenda;
+
+
 
     // Componentes da Aba de Relatório
     private JTable tabelaRelatorio;
@@ -53,13 +67,25 @@ public class TelaGerenciamento extends JFrame {
 
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
         tabbedPane.addTab("Gerenciar Estoque", criarPainelEstoque());
         tabbedPane.addTab("Registrar Venda", criarPainelVendas());
         tabbedPane.addTab("Relatório de Movimentações", criarPainelRelatorio());
+        tabbedPane.addTab("Relatório Mês", criarPainelRelatorioMensal());
+
+        tabbedPane.addChangeListener(e -> {
+            int index = tabbedPane.getSelectedIndex();
+            String titulo = tabbedPane.getTitleAt(index);
+
+            if ("Relatório Mês".equals(titulo)) {
+                tabbedPane.setComponentAt(index, criarPainelRelatorioMensal());
+            }
+        });
 
         add(tabbedPane, BorderLayout.CENTER);
         atualizarDados();
     }
+
 
     private void configurarJanela() {
         setTitle("Sistema de Gerenciamento de Mercadorias");
@@ -123,16 +149,24 @@ public class TelaGerenciamento extends JFrame {
         JPanel painelVendas = new JPanel(new BorderLayout(15, 15));
         painelVendas.setBorder(new EmptyBorder(15, 15, 15, 15));
 
+        // Tabela de vendas
         modeloTabelaVendas = new DefaultTableModel(new Object[]{"Data", "Produto Vendido", "Qtd.", "Observação"}, 0);
         tabelaVendas = new JTable(modeloTabelaVendas);
         configurarTabela(tabelaVendas);
+        tabelaVendas.setRowHeight(26);
         painelVendas.add(new JScrollPane(tabelaVendas), BorderLayout.CENTER);
 
+        // Formulário de registro de vendas
         JPanel painelFormulario = criarFormularioVenda();
-        painelVendas.add(painelFormulario, BorderLayout.SOUTH);
+
+        JScrollPane scrollFormulario = new JScrollPane(painelFormulario);
+        scrollFormulario.setBorder(BorderFactory.createEmptyBorder());
+        scrollFormulario.setPreferredSize(new Dimension(0, 220));
+        painelVendas.add(scrollFormulario, BorderLayout.SOUTH);
 
         return painelVendas;
     }
+
 
     private JPanel criarFormularioVenda() {
         JPanel painelFormulario = new JPanel(new GridBagLayout());
@@ -140,25 +174,132 @@ public class TelaGerenciamento extends JFrame {
                 BorderFactory.createEtchedBorder(), "Registrar Nova Venda",
                 TitledBorder.DEFAULT_JUSTIFICATION, TitledBorder.DEFAULT_POSITION,
                 new Font("Segoe UI", Font.BOLD, 14)));
+
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0; painelFormulario.add(new JLabel("Produto:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 1.0; comboProdutosVenda = new JComboBox<>(); painelFormulario.add(comboProdutosVenda, gbc);
-        gbc.gridx = 0; gbc.gridy = 1; painelFormulario.add(new JLabel("Quantidade:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 1; spinnerQuantidadeVenda = new JSpinner(new SpinnerNumberModel(1, 1, 999, 1)); painelFormulario.add(spinnerQuantidadeVenda, gbc);
-        gbc.gridx = 0; gbc.gridy = 2; painelFormulario.add(new JLabel("Observação:"), gbc);
-        gbc.gridx = 1; gbc.gridy = 2; campoObservacaoVenda = new JTextField(); painelFormulario.add(campoObservacaoVenda, gbc);
+        // Linha 1 - Produto
+        gbc.gridx = 0; gbc.gridy = 0;
+        painelFormulario.add(new JLabel("Produto:"), gbc);
 
-        JButton botaoRegistrarVenda = personalizarBotao(new JButton(), "Registrar Venda", COR_AZUL);
-        gbc.gridx = 1; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(15, 5, 5, 5);
-        painelFormulario.add(botaoRegistrarVenda, gbc);
+        gbc.gridx = 1;
+        comboProdutosVenda = new JComboBox<>();
+        painelFormulario.add(comboProdutosVenda, gbc);
 
-        botaoRegistrarVenda.addActionListener(e -> registrarVenda());
+        // Linha 2 - Quantidade
+        gbc.gridx = 0; gbc.gridy = 1;
+        painelFormulario.add(new JLabel("Quantidade:"), gbc);
+
+        gbc.gridx = 1;
+        spinnerQuantidadeVenda = new JSpinner(new SpinnerNumberModel(1, 1, 999, 1));
+        painelFormulario.add(spinnerQuantidadeVenda, gbc);
+
+        // Linha 3 - Preço
+        gbc.gridx = 0; gbc.gridy = 2;
+        painelFormulario.add(new JLabel("Preço de Venda (R$):"), gbc);
+
+        gbc.gridx = 1;
+        campoPrecoVenda = new JTextField();
+        painelFormulario.add(campoPrecoVenda, gbc);
+
+        // Linha 4 - Observação
+        gbc.gridx = 0; gbc.gridy = 3;
+        painelFormulario.add(new JLabel("Observação:"), gbc);
+
+        gbc.gridx = 1;
+        campoObservacaoVenda = new JTextField();
+        painelFormulario.add(campoObservacaoVenda, gbc);
+
+        // Linha 5 - Botões
+        JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        botaoAdicionarItem = personalizarBotao(new JButton(), "Adicionar ao Pedido", COR_AZUL);
+        botaoFinalizarVenda = personalizarBotao(new JButton(), "Finalizar Venda", COR_VERDE);
+        painelBotoes.add(botaoAdicionarItem);
+        painelBotoes.add(botaoFinalizarVenda);
+
+        gbc.gridx = 1; gbc.gridy = 4;
+        painelFormulario.add(painelBotoes, gbc);
+
+        // Linha 6 - Tabela de Itens do Pedido
+        modeloTabelaItensPedido = new DefaultTableModel(new Object[]{"Produto", "Qtd.", "Preço", "Subtotal"}, 0);
+        tabelaItensPedido = new JTable(modeloTabelaItensPedido);
+        configurarTabela(tabelaItensPedido);
+
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1; gbc.weighty = 1;
+        painelFormulario.add(new JScrollPane(tabelaItensPedido), gbc);
+
+        // Ações
+        botaoAdicionarItem.addActionListener(e -> adicionarItemAoPedido());
+        botaoFinalizarVenda.addActionListener(e -> finalizarPedido());
+
         return painelFormulario;
     }
+
+    private void adicionarItemAoPedido() {
+        Produto produtoSelecionado = (Produto) comboProdutosVenda.getSelectedItem();
+        if (produtoSelecionado == null) {
+            JOptionPane.showMessageDialog(this, "Selecione um produto antes de adicionar.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int quantidade = (int) spinnerQuantidadeVenda.getValue();
+        if (quantidade <= 0) {
+            JOptionPane.showMessageDialog(this, "A quantidade deve ser maior que zero.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        double precoVenda;
+        try {
+            precoVenda = Double.parseDouble(campoPrecoVenda.getText().replace(",", "."));
+            if (precoVenda <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Informe um preço válido maior que zero.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Adiciona ao pedido atual
+        pedidoAtual.adicionarItem(produtoSelecionado, quantidade, precoVenda);
+
+        // Atualiza a tabela
+        double subtotal = precoVenda * quantidade;
+        modeloTabelaItensPedido.addRow(new Object[]{
+                produtoSelecionado.getNome(),
+                quantidade,
+                String.format("R$ %.2f", precoVenda),
+                String.format("R$ %.2f", subtotal)
+        });
+
+        campoPrecoVenda.setText("");
+        spinnerQuantidadeVenda.setValue(1);
+    }
+
+    private void finalizarPedido() {
+        if (pedidoAtual.getItens().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Adicione ao menos um produto ao pedido.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            for (ItemPedido item : pedidoAtual.getItens()) {
+                produtoDAO.registrarVenda(item.getProduto().getId(), item.getQuantidade(), item.getPrecoVenda(), "Venda agrupada");
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Pedido finalizado com sucesso!\nFaturamento total: R$ " + String.format("%.2f", pedidoAtual.calcularTotal()),
+                    "Sucesso", JOptionPane.INFORMATION_MESSAGE);
+
+            modeloTabelaItensPedido.setRowCount(0);
+            pedidoAtual = new Pedido();
+            atualizarDados();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro ao finalizar pedido", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
 
     private JPanel criarPainelRelatorio() {
         JPanel painelRelatorio = new JPanel(new BorderLayout(10, 10));
@@ -179,6 +320,120 @@ public class TelaGerenciamento extends JFrame {
         return painelRelatorio;
     }
 
+    private JPanel criarPainelRelatorioMensal() {
+        JPanel painel = new JPanel(new BorderLayout(15, 15));
+        painel.setBorder(new EmptyBorder(15, 15, 15, 15));
+
+        MovimentacaoDAO movimentacaoDAO = new MovimentacaoDAO();
+        List<Object[]> dados = movimentacaoDAO.listarFaturamentoMensal();
+
+
+        JPanel painelGrafico = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+
+                if (dados == null || dados.isEmpty()) {
+                    g.drawString("Nenhum dado de venda encontrado.", 100, 100);
+                    return;
+                }
+
+                // Extrai dados do banco
+                int n = dados.size();
+                String[] meses = new String[n];
+                double[] totalVendas = new double[n];
+                int[] pedidos = new int[n];
+
+                for (int i = 0; i < n; i++) {
+                    meses[i] = (String) dados.get(i)[0];
+                    pedidos[i] = (int) dados.get(i)[1];
+                    totalVendas[i] = (double) dados.get(i)[2];
+                }
+
+                int largura = getWidth();
+                int altura = getHeight();
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Eixos
+                g2.setColor(Color.DARK_GRAY);
+                g2.drawLine(80, altura - 60, largura - 40, altura - 60);
+                g2.drawLine(80, 40, 80, altura - 60);
+
+                // Escalas
+                double maxVenda = Arrays.stream(totalVendas).max().orElse(1000);
+                int espacamento = (largura - 160) / meses.length;
+
+                // Desenha barras (faturamento)
+                for (int i = 0; i < meses.length; i++) {
+                    int x = 100 + i * espacamento;
+                    int alturaBarra = (int) ((totalVendas[i] / maxVenda) * (altura - 120));
+                    int y = altura - 60 - alturaBarra;
+
+                    g2.setColor(new Color(41, 128, 185));
+                    g2.fillRect(x, y, 60, alturaBarra);
+
+                    g2.setColor(Color.BLACK);
+                    g2.drawString("R$ " + String.format("%.2f", totalVendas[i]), x, y - 5);
+                    g2.drawString(meses[i], x + 5, altura - 40);
+                }
+
+                // Desenha linha (pedidos)
+                g2.setColor(new Color(231, 76, 60));
+                int[] xPts = new int[meses.length];
+                int[] yPts = new int[meses.length];
+
+                int maxPedidos = Arrays.stream(pedidos).max().orElse(1);
+
+                for (int i = 0; i < meses.length; i++) {
+                    int x = 130 + i * espacamento;
+                    int y = (int) (altura - 60 - (pedidos[i] * (altura - 120) / (double) maxPedidos));
+                    xPts[i] = x;
+                    yPts[i] = y;
+                    g2.fillOval(x - 4, y - 4, 8, 8);
+                    if (i > 0) g2.drawLine(xPts[i - 1], yPts[i - 1], x, y);
+                }
+
+                // Legendas
+                g2.setColor(new Color(41, 128, 185));
+                g2.fillRect(100, 20, 12, 12);
+                g2.setColor(Color.BLACK);
+                g2.drawString("Faturamento (R$)", 120, 30);
+
+                g2.setColor(new Color(231, 76, 60));
+                g2.fillOval(260, 20, 10, 10);
+                g2.setColor(Color.BLACK);
+                g2.drawString("Pedidos", 280, 30);
+            }
+        };
+
+        painelGrafico.setPreferredSize(new Dimension(900, 350));
+        painel.add(painelGrafico, BorderLayout.CENTER);
+
+        // Lista de resumo abaixo do gráfico
+        JTextArea listaMeses = new JTextArea();
+        listaMeses.setEditable(false);
+        listaMeses.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+
+        if (dados.isEmpty()) {
+            listaMeses.setText("Nenhuma venda registrada até o momento.");
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (Object[] linha : dados) {
+                String mes = (String) linha[0];
+                int pedidos = (int) linha[1];
+                double vendas = (double) linha[2];
+                sb.append(String.format("%s → Faturamento = R$ %.2f — Pedidos: %d%n", mes, vendas, pedidos));
+            }
+            listaMeses.setText(sb.toString());
+        }
+
+        painel.add(new JScrollPane(listaMeses), BorderLayout.SOUTH);
+        return painel;
+    }
+
+
+
     private void adicionarListenersEstoque() {
         botaoSalvarEstoque.addActionListener(e -> salvarOuAtualizarProduto());
         botaoDeletarEstoque.addActionListener(e -> deletarProduto());
@@ -190,12 +445,35 @@ public class TelaGerenciamento extends JFrame {
         });
     }
 
+
+
     private void salvarOuAtualizarProduto() {
         String nome = campoNome.getText();
         String precoStr = campoPreco.getText();
         String qtdStr = campoQuantidade.getText();
         if (nome.trim().isEmpty() || precoStr.trim().isEmpty() || qtdStr.trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Nome, Preço e Quantidade são obrigatórios!", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+
+        if (!Validador.nomeValido(campoNome.getText())) {
+            JOptionPane.showMessageDialog(this, "O nome deve conter apenas letras e ter pelo menos 2 caracteres.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!Validador.precoValido(campoPreco.getText())) {
+            JOptionPane.showMessageDialog(this, "O preço deve ser um número maior que zero.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!Validador.quantidadeValida(campoQuantidade.getText())) {
+            JOptionPane.showMessageDialog(this, "A quantidade deve ser um número inteiro maior que zero.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!Validador.descricaoValida(campoDescricao.getText())) {
+            JOptionPane.showMessageDialog(this, "A descrição é muito longa (máximo 255 caracteres).", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -220,19 +498,42 @@ public class TelaGerenciamento extends JFrame {
     private void registrarVenda() {
         Produto produtoSelecionado = (Produto) comboProdutosVenda.getSelectedItem();
         if (produtoSelecionado == null) {
-            JOptionPane.showMessageDialog(this, "Selecione um produto.", "Erro", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Selecione um produto antes de registrar a venda.", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
+
+        String qtdTexto = spinnerQuantidadeVenda.getValue().toString();
+        if (!Validador.quantidadeValida(qtdTexto)) {
+            JOptionPane.showMessageDialog(this, "A quantidade deve ser um número maior que zero.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String precoTexto = campoPrecoVenda.getText().replace(",", ".");
+        if (!Validador.precoValido(precoTexto)) {
+            JOptionPane.showMessageDialog(this, "O preço de venda deve ser um número maior que zero.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if (!Validador.descricaoValida(campoObservacaoVenda.getText())) {
+            JOptionPane.showMessageDialog(this, "A observação é muito longa (máximo 255 caracteres).", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         try {
-            produtoDAO.registrarVenda(produtoSelecionado.getId(), (int) spinnerQuantidadeVenda.getValue(), campoObservacaoVenda.getText());
+            double precoVenda = Double.parseDouble(precoTexto);
+            int quantidade = Integer.parseInt(qtdTexto);
+
+            produtoDAO.registrarVenda(produtoSelecionado.getId(), quantidade, precoVenda, campoObservacaoVenda.getText());
             JOptionPane.showMessageDialog(this, "Venda registrada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
             spinnerQuantidadeVenda.setValue(1);
             campoObservacaoVenda.setText("");
+            campoPrecoVenda.setText("");
             atualizarDados();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro ao Registrar Venda", JOptionPane.ERROR_MESSAGE);
         }
     }
+
 
     private void deletarProduto() {
         int linhaSelecionada = tabelaProdutos.getSelectedRow();
@@ -344,6 +645,7 @@ public class TelaGerenciamento extends JFrame {
         header.setBackground(new Color(69, 73, 74));
         header.setForeground(Color.WHITE);
     }
+
 
     private JButton personalizarBotao(JButton botao, String texto, Color cor) {
         botao.setText(texto);

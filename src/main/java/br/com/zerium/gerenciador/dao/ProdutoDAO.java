@@ -68,7 +68,7 @@ public class ProdutoDAO {
         }
     }
 
-    public void registrarVenda(int produtoId, int quantidadeVendida, String observacao) throws Exception {
+    public void registrarVenda(int produtoId, int quantidadeVendida, double precoVenda, String observacao) throws Exception {
         Produto produto = buscarPorId(produtoId);
         if (produto == null) {
             throw new Exception("Produto não encontrado.");
@@ -78,6 +78,8 @@ public class ProdutoDAO {
         }
 
         int novaQuantidade = produto.getQuantidade() - quantidadeVendida;
+
+        // Atualiza a quantidade no estoque
         String sqlUpdate = "UPDATE produtos SET quantidade = ? WHERE id = ?";
         try (Connection conn = ConexaoDB.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sqlUpdate)) {
@@ -88,9 +90,11 @@ public class ProdutoDAO {
             throw new Exception("Erro ao atualizar o estoque do produto.", e);
         }
 
-        Movimentacao mov = new Movimentacao(produtoId, "SAIDA", quantidadeVendida, observacao);
+        // Registra a movimentação da venda, agora com o preço
+        Movimentacao mov = new Movimentacao(produtoId, "VENDA", quantidadeVendida, precoVenda, observacao);
         movimentacaoDAO.registrarMovimentacao(mov);
     }
+
 
     public void removerProduto(int id) {
         String sql = "DELETE FROM produtos WHERE id = ?";
