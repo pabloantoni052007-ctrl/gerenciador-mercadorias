@@ -66,26 +66,33 @@ git clone https://github.com/seu-usuario/gerenciador-mercadorias.git
 
 2. Configure o banco de dados MySQL:
 
-CREATE DATABASE GerenciadorMercadoria;
-USE GerenciadorMercadoria;
+-- Apaga o banco de dados se ele já existir, para começar do zero
+DROP DATABASE IF EXISTS sistema_mercadorias;
 
+-- Cria o banco de dados novamente
+CREATE DATABASE sistema_mercadorias;
+
+-- Seleciona o banco para usar
+USE sistema_mercadorias;
+
+-- Cria a tabela principal de produtos
 CREATE TABLE produtos (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(100) NOT NULL,
-  descricao VARCHAR(255),
-  preco DECIMAL(10,2) NOT NULL,
-  quantidade INT NOT NULL
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    descricao VARCHAR(255),
+    preco DECIMAL(10, 2) NOT NULL,
+    quantidade INT NOT NULL
 );
 
+-- Cria a tabela para o log de movimentações
 CREATE TABLE movimentacoes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  produto_id INT NOT NULL,
-  tipo VARCHAR(20) NOT NULL,
-  quantidade_movida INT NOT NULL,
-  preco_venda DECIMAL(10,2),
-  data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  observacao VARCHAR(255),
-  FOREIGN KEY (produto_id) REFERENCES produtos(id)
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    produto_id INT NOT NULL,
+    tipo ENUM('ENTRADA', 'SAIDA') NOT NULL,
+    quantidade_movida INT NOT NULL,
+    data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    observacao VARCHAR(255),
+    FOREIGN KEY (produto_id) REFERENCES produtos(id) ON DELETE CASCADE
 );
 
 
