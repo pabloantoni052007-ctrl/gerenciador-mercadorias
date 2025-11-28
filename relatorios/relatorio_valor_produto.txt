@@ -1,0 +1,18 @@
+=== RELATÓRIO DE VALOR POR PRODUTO ===
+
+ID: 33 | Nome: Arroz | Preço: R$ 20,00
+ID: 20 | Nome: Bermuda Sarja (G) | Preço: R$ 39,90
+ID: 19 | Nome: Bermuda Sarja (M) | Preço: R$ 39,90
+ID: 25 | Nome: Boné Lacoste Sport (GF ATACADO) | Preço: R$ 28,00
+ID: 30 | Nome: Boné Lacoste Sport Azul Marinho | Preço: R$ 30,00
+ID: 31 | Nome: Boné Lacoste Sport Branco | Preço: R$ 30,00
+ID: 29 | Nome: Boné Lacoste Sport Preto  | Preço: R$ 30,00
+ID: 32 | Nome: Boné Lacoste Sport Verde Militar | Preço: R$ 30,00
+ID: 24 | Nome: Calça Tech (M) | Preço: R$ 80,00
+ID: 23 | Nome: Camiseta 30.1 (G) | Preço: R$ 19,90
+ID: 22 | Nome: Camiseta 30.1 (M) | Preço: R$ 19,90
+ID: 17 | Nome: Camiseta Básica Branca (G) | Preço: R$ 15,00
+ID: 18 | Nome: Camiseta Básica Branca (M) | Preço: R$ 15,00
+ID: 16 | Nome: Camiseta Básica Preta (M) | Preço: R$ 15,00
+ID: 15 | Nome: Camseta Básica Preta (G) | Preço: R$ 15,00
+ID: 21 | Nome: Short Tactel (M) | Preço: R$ 30,00

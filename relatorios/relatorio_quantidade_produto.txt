@@ -1,0 +1,18 @@
+=== RELATÓRIO DE QUANTIDADE POR PRODUTO ===
+
+ID: 33 | Nome: Arroz | Estoque: 10
+ID: 20 | Nome: Bermuda Sarja (G) | Estoque: 2
+ID: 19 | Nome: Bermuda Sarja (M) | Estoque: 3
+ID: 25 | Nome: Boné Lacoste Sport (GF ATACADO) | Estoque: 0
+ID: 30 | Nome: Boné Lacoste Sport Azul Marinho | Estoque: 3
+ID: 31 | Nome: Boné Lacoste Sport Branco | Estoque: 3
+ID: 29 | Nome: Boné Lacoste Sport Preto  | Estoque: 2
+ID: 32 | Nome: Boné Lacoste Sport Verde Militar | Estoque: 1
+ID: 24 | Nome: Calça Tech (M) | Estoque: 1
+ID: 23 | Nome: Camiseta 30.1 (G) | Estoque: 2
+ID: 22 | Nome: Camiseta 30.1 (M) | Estoque: 2
+ID: 17 | Nome: Camiseta Básica Branca (G) | Estoque: 3
+ID: 18 | Nome: Camiseta Básica Branca (M) | Estoque: 3
+ID: 16 | Nome: Camiseta Básica Preta (M) | Estoque: 2
+ID: 15 | Nome: Camseta Básica Preta (G) | Estoque: 1
+ID: 21 | Nome: Short Tactel (M) | Estoque: 1

@@ -17,6 +17,8 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Arrays;
@@ -70,20 +72,11 @@ public class TelaGerenciamento extends JFrame {
 
         tabbedPane.addTab("Gerenciar Estoque", criarPainelEstoque());
         tabbedPane.addTab("Registrar Venda", criarPainelVendas());
-        tabbedPane.addTab("Relatório de Movimentações", criarPainelRelatorio());
-        tabbedPane.addTab("Relatório Mês", criarPainelRelatorioMensal());
-
-        tabbedPane.addChangeListener(e -> {
-            int index = tabbedPane.getSelectedIndex();
-            String titulo = tabbedPane.getTitleAt(index);
-
-            if ("Relatório Mês".equals(titulo)) {
-                tabbedPane.setComponentAt(index, criarPainelRelatorioMensal());
-            }
-        });
+        tabbedPane.addTab("Relatórios", criarPainelRelatorios());
 
         add(tabbedPane, BorderLayout.CENTER);
         atualizarDados();
+
     }
 
 
@@ -166,6 +159,111 @@ public class TelaGerenciamento extends JFrame {
 
         return painelVendas;
     }
+
+    // ======================= ABA RELATÓRIOS =======================
+    private JPanel criarPainelRelatorios() {
+        JPanel painel = new JPanel(new GridBagLayout());
+        painel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(15, 15, 15, 15);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+
+        JLabel titulo = new JLabel("Gerar Relatórios");
+        titulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        gbc.gridy = 0;
+        painel.add(titulo, gbc);
+
+        JButton botaoValor = new JButton("Relatório de Valor por Produto");
+        JButton botaoQuantidade = new JButton("Relatório de Quantidade por Produto");
+        JButton botaoMensal = new JButton("Relatório Mensal (Gráfico)");
+
+        // Estilização padrão dos botões
+        personalizarBotao(botaoValor, "Relatório de Valor por Produto", COR_AZUL);
+        personalizarBotao(botaoQuantidade, "Relatório de Quantidade por Produto", COR_VERDE);
+        personalizarBotao(botaoMensal, "Relatório Mensal (Gráfico)", COR_VERMELHO);
+
+        gbc.gridy = 1;
+        painel.add(botaoValor, gbc);
+
+        gbc.gridy = 2;
+        painel.add(botaoQuantidade, gbc);
+
+        gbc.gridy = 3;
+        painel.add(botaoMensal, gbc);
+
+        // Ações dos botões
+        botaoValor.addActionListener(e -> gerarRelatorioValor());
+        botaoQuantidade.addActionListener(e -> gerarRelatorioQuantidade());
+        botaoMensal.addActionListener(e -> abrirRelatorioMensal());
+
+        return painel;
+    }
+
+    private void abrirRelatorioMensal() {
+        JFrame frame = new JFrame("Relatório de Faturamento Mensal");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.add(criarPainelRelatorioMensal());
+        frame.setSize(900, 650);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
+
+    private void gerarRelatorioQuantidade() {
+        try {
+            File pasta = new File("relatorios");
+            if (!pasta.exists()) pasta.mkdirs();
+
+            File arquivo = new File(pasta, "relatorio_quantidade_produto.txt");
+
+            try (PrintWriter writer = new PrintWriter(arquivo)) {
+                writer.println("=== RELATÓRIO DE QUANTIDADE POR PRODUTO ===\n");
+                List<Produto> produtos = produtoDAO.listarProdutos();
+                for (Produto p : produtos) {
+                    writer.printf("ID: %d | Nome: %s | Estoque: %d%n",
+                            p.getId(), p.getNome(), p.getQuantidade());
+                }
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Relatório gerado com sucesso!\nArquivo salvo em:\n" + arquivo.getAbsolutePath(),
+                    "Relatório", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao gerar relatório: " + e.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+
+    private void gerarRelatorioValor() {
+        try {
+            File pasta = new File("relatorios");
+            if (!pasta.exists()) pasta.mkdirs();
+
+            File arquivo = new File(pasta, "relatorio_valor_produto.txt");
+
+            try (PrintWriter writer = new PrintWriter(arquivo)) {
+                writer.println("=== RELATÓRIO DE VALOR POR PRODUTO ===\n");
+                List<Produto> produtos = produtoDAO.listarProdutos();
+                for (Produto p : produtos) {
+                    writer.printf("ID: %d | Nome: %s | Preço: R$ %.2f%n",
+                            p.getId(), p.getNome(), p.getPreco());
+                }
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    "Relatório gerado com sucesso!\nArquivo salvo em:\n" + arquivo.getAbsolutePath(),
+                    "Relatório", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao gerar relatório: " + e.getMessage(),
+                    "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
 
 
     private JPanel criarFormularioVenda() {
@@ -580,6 +678,9 @@ public class TelaGerenciamento extends JFrame {
     }
 
     private void carregarDadosRelatorio() {
+
+        if (modeloTabelaRelatorio == null) return;
+
         modeloTabelaRelatorio.setRowCount(0);
         List<Movimentacao> movimentacoes = movimentacaoDAO.listarTodas();
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
@@ -594,6 +695,7 @@ public class TelaGerenciamento extends JFrame {
             });
         }
     }
+
 
     private void atualizarDados() {
         List<Produto> produtos = produtoDAO.listarProdutos();
@@ -657,3 +759,4 @@ public class TelaGerenciamento extends JFrame {
         return botao;
     }
 }
+
