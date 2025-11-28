@@ -344,6 +344,17 @@ public class TelaGerenciamento extends JFrame {
         }
 
         int quantidade = (int) spinnerQuantidadeVenda.getValue();
+
+        // 🔥 VERIFICAÇÃO CORRETA DE ESTOQUE
+        if (quantidade > produtoSelecionado.getQuantidade()) {
+            JOptionPane.showMessageDialog(this,
+                    "Quantidade solicitada maior do que o estoque disponível!\n" +
+                            "Estoque atual: " + produtoSelecionado.getQuantidade(),
+                    "Estoque insuficiente",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         if (quantidade <= 0) {
             JOptionPane.showMessageDialog(this, "A quantidade deve ser maior que zero.", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
@@ -358,10 +369,9 @@ public class TelaGerenciamento extends JFrame {
             return;
         }
 
-        // Adiciona ao pedido atual
+        // ✔ Agora é seguro adicionar
         pedidoAtual.adicionarItem(produtoSelecionado, quantidade, precoVenda);
 
-        // Atualiza a tabela
         double subtotal = precoVenda * quantidade;
         modeloTabelaItensPedido.addRow(new Object[]{
                 produtoSelecionado.getNome(),
@@ -373,6 +383,7 @@ public class TelaGerenciamento extends JFrame {
         campoPrecoVenda.setText("");
         spinnerQuantidadeVenda.setValue(1);
     }
+
 
     private void finalizarPedido() {
         if (pedidoAtual.getItens().isEmpty()) {
